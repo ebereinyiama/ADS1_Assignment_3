@@ -14,6 +14,9 @@ import scipy.optimize as opt
 import err_ranges as err
 import map
 
+
+### CLUSTERING
+
 def worldbank(dataset, indicator):
     
     """This is function to read the dataset csv file into a pandas dataframe"""
@@ -149,3 +152,133 @@ print('The years in cluster 0 are \n', df_label_0.head(30))
 df_label_1 = df_fit.loc[df_fit['label'] == 1]
 print()
 print('The years in cluster 0 are \n', df_label_1.head(30))
+
+### FITTING
+
+# The fitting is done with the indicator Population Total for Nigeria
+
+def fitting(dataset_2, indicator_2):
+    
+    """This is function to read the dataset csv file into a pandas dataframe
+    The dataset is for fitting"""
+    
+    df_dataset_2 = pd.read_csv(dataset_2, skiprows=4)
+    df_dataset_2 = df_dataset_2.drop(['Country Code', 'Indicator Code'], axis = 1)
+    df_dataset_2 = df_dataset_2[df_dataset_2['Indicator Name'] == indicator_2]
+   
+    return df_dataset_2
+
+dataset_2 = 'API_19_DS2_en_csv_v2_4773766.csv'
+indicator_2 = 'Population, total'
+
+df_fitting = fitting(dataset_2, indicator_2).T
+df_fitting = df_fitting.rename(columns=df_fitting.iloc[0])
+df_fitting = df_fitting.drop(index=df_fitting.index[:2], axis=0)
+df_fitting = df_fitting.fillna(0)
+df_fitting['Year'] = df_fitting.index
+df_fitting = df_fitting[['Year', 'Nigeria']].apply(pd.to_numeric, 
+                                               errors='coerce')
+print()
+print(df_fitting)
+
+def exp_growth(t, scale, growth):
+    """ This function computes exponential function 
+    with scale and growth as free parameters.
+    1960 is the base year.
+    """
+    
+    f = scale * np.exp(growth * (t-1960)) 
+    
+    return f
+
+# fitting the exponential growth
+popt, covar = opt.curve_fit(exp_growth, df_fitting["Year"], 
+                            df_fitting["Nigeria"])
+
+print("The fit parameter: \n", popt)
+
+# The *popt is used to pass on the fit parameters
+df_fitting["pop_exp"] = exp_growth(df_fitting["Year"], *popt)
+
+plt.figure()
+plt.plot(df_fitting["Year"], df_fitting["Nigeria"], label="main data")
+plt.plot(df_fitting["Year"], df_fitting["pop_exp"], label="fit data")
+
+plt.legend()
+plt.title("First fit attempt")
+plt.xlabel("year")
+plt.ylabel("population")
+plt.show()
+print()
+
+# Estimating values for scale factor and exponential factor for a better fit
+
+popt = [0.5e8, 0.01]
+df_fitting["pop_exp"] = exp_growth(df_fitting["Year"], *popt)
+
+plt.figure()
+plt.plot(df_fitting["Year"], df_fitting["Nigeria"], label="main data")
+plt.plot(df_fitting["Year"], df_fitting["pop_exp"], label="fit data")
+
+plt.legend()
+plt.xlabel("year")
+plt.ylabel("population")
+plt.title("Improved fit attempt")
+plt.show()
+
+popt = [0.5e8, 0.023]
+df_fitting["pop_exp"] = exp_growth(df_fitting["Year"], *popt)
+
+plt.figure()
+plt.plot(df_fitting["Year"], df_fitting["Nigeria"], label="main data")
+plt.plot(df_fitting["Year"], df_fitting["pop_exp"], label="fit data")
+
+plt.legend()
+plt.xlabel("year")
+plt.ylabel("population")
+plt.title("Improved value")
+plt.show()
+
+# extracting the sigmas from the diagonal of the covariance matrix
+sigma = np.sqrt(np.diag(covar))
+print(sigma)
+
+low, up = err.err_ranges(df_fitting["Year"], exp_growth, popt, sigma)
+
+plt.figure()
+plt.title("Exponential function")
+plt.plot(df_fitting["Year"], df_fitting["Nigeria"], label="main data")
+plt.plot(df_fitting["Year"], df_fitting["pop_exp"], label="fit data")
+
+plt.fill_between(df_fitting["Year"], low, up, alpha=0.7)
+plt.legend()
+plt.xlabel("year")
+plt.ylabel("population")
+plt.show()
+
+#Forecasting population of Nigeria
+
+print("Forcasted population")
+low, up = err.err_ranges(2030, exp_growth, popt, sigma)
+print("2030 between ", low, "and", up)
+low, up = err.err_ranges(2040, exp_growth, popt, sigma)
+print("2040 between ", low, "and", up)
+low, up = err.err_ranges(2050, exp_growth, popt, sigma)
+print("2050 between ", low, "and", up)
+
+# Error ranges of + or -
+
+low, up = err.err_ranges(2030, exp_growth, popt, sigma)
+mean = (up+low) / 2.0
+pm = (up-low) / 2.0
+print("2030:", mean, "+/-", pm)
+
+low, up = err.err_ranges(2040, exp_growth, popt, sigma)
+mean = (up+low) / 2.0
+pm = (up-low) / 2.0
+print("2040:", mean, "+/-", pm)
+
+low, up = err.err_ranges(2050, exp_growth, popt, sigma)
+mean = (up+low) / 2.0
+pm = (up-low) / 2.0
+print("2050:", mean, "+/-", pm)
