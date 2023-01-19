@@ -27,7 +27,7 @@ def worldbank(dataset, indicator):
    
     return df_dataset 
 
-# creating variables for dataset and indicator
+# creating variables for dataset and indicator for clustering
 dataset = 'API_19_DS2_en_csv_v2_4773766.csv'
 indicator = 'Population growth (annual %)'
 
@@ -49,7 +49,7 @@ pd.plotting.scatter_matrix(df_clustering_1, figsize=(9.0, 9.0))
 plt.tight_layout()    # this helps to avoid overlap of labels
 plt.show()
 
-# A function to normalize dataset
+# A function to normalize dataset for clustering
 def norm(df, col1, col2):
     """This function returns normalised values of [0,1] on the columns of the dataframe
     """
@@ -65,8 +65,13 @@ df_fit = norm(df_fit, 'Australia', 'South Africa')
 #print()
 print(df_fit)
 
-# A scatter plot of the two countries
-df_fit.plot('Australia', 'South Africa', kind='scatter')
+# A scatter plot of the two countries chosen
+plt.figure()
+plt.scatter(df_fit['Australia'], df_fit['South Africa'])
+plt.title('Scatter Plot')
+plt.xlabel('Australia')
+plt.ylabel('South Africa')
+plt.show()
 
 #To set up kmeans and fit
 for ic in range(2, 7):
@@ -79,7 +84,6 @@ for ic in range(2, 7):
     print (ic, skmet.silhouette_score(df_fit, labels))
     
 # Using elbow method to determine the number of clusters
-
 numClusters = [1,2,3,4] #to find the best number of clusters
 SSE = []
 for k in numClusters:
@@ -91,6 +95,8 @@ plt.plot(numClusters, SSE)
 plt.title('Elbow method')
 plt.xlabel('Number of Clusters')
 plt.ylabel('SSE')
+
+# 2 clusters and 3 clusters were plotted for comparison
 
 # A plot for 3 clusters
 kmeans = KMeans(n_clusters=3)
@@ -151,7 +157,8 @@ print('The years in cluster 0 are \n', df_label_0.head(30))
 
 df_label_1 = df_fit.loc[df_fit['label'] == 1]
 print()
-print('The years in cluster 0 are \n', df_label_1.head(30))
+print('The years in cluster 1 are \n', df_label_1.head(30))
+print()
 
 ### FITTING
 
@@ -177,7 +184,7 @@ df_fitting = df_fitting.drop(index=df_fitting.index[:2], axis=0)
 df_fitting = df_fitting.fillna(0)
 df_fitting['Year'] = df_fitting.index
 df_fitting = df_fitting[['Year', 'Nigeria']].apply(pd.to_numeric, 
-                                               errors='coerce')
+                                               errors='coerce') #to set any invalid parsing as NaN
 print()
 print(df_fitting)
 
@@ -226,7 +233,7 @@ plt.ylabel("population")
 plt.title("Improved fit attempt")
 plt.show()
 
-popt = [0.5e8, 0.023]
+popt = [0.5e8, 0.024]
 df_fitting["pop_exp"] = exp_growth(df_fitting["Year"], *popt)
 
 plt.figure()
@@ -257,8 +264,8 @@ plt.ylabel("population")
 plt.show()
 
 #Forecasting population of Nigeria
-
-print("Forcasted population")
+print()
+print("Forecasted population of Nigeria")
 low, up = err.err_ranges(2030, exp_growth, popt, sigma)
 print("2030 between ", low, "and", up)
 low, up = err.err_ranges(2040, exp_growth, popt, sigma)
@@ -267,7 +274,8 @@ low, up = err.err_ranges(2050, exp_growth, popt, sigma)
 print("2050 between ", low, "and", up)
 
 # Error ranges of + or -
-
+print()
+print('Forecasted population of Nigeria + or - : \n')
 low, up = err.err_ranges(2030, exp_growth, popt, sigma)
 mean = (up+low) / 2.0
 pm = (up-low) / 2.0
