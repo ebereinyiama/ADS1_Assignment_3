@@ -36,13 +36,13 @@ print()
 print(df_clustering)
 
 # selecting a few countries to find interesting clustering
-df_clustering = df_clustering[['Nigeria', 'China', 'India', 'Canada', 'Brazil', 'Germany', 'Australia', 
+df_clustering_1 = df_clustering[['Nigeria', 'China', 'India', 'Canada', 'Brazil', 'Germany', 'Australia', 
                                   'Morocco', 'Singapore', 'Ireland', 'South Africa', 'United States']]
 
 # heatmap
-map.heat_corr(df_clustering, 9)
+map.heat_corr(df_clustering_1, 9)
 
-pd.plotting.scatter_matrix(df_clustering, figsize=(9.0, 9.0))
+pd.plotting.scatter_matrix(df_clustering_1, figsize=(9.0, 9.0))
 plt.tight_layout()    # this helps to avoid overlap of labels
 plt.show()
 
@@ -135,3 +135,17 @@ plt.xlabel("Australia")
 plt.ylabel("South Africa")
 plt.title("2 clusters")
 plt.show()
+
+# To know the years that are similar in population annual growth for the two countries
+year_kmeans = kmeans.fit_predict(df_fit)
+year_kmeans
+
+df_fit['label'] = year_kmeans
+df_label_0 = df_fit.loc[df_fit['label'] == 0]
+
+print()
+print('The years in cluster 0 are \n', df_label_0.head(30)) 
+
+df_label_1 = df_fit.loc[df_fit['label'] == 1]
+print()
+print('The years in cluster 0 are \n', df_label_1.head(30))
